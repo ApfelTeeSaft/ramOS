@@ -1,0 +1,152 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            nasm \
+            xorriso \
+            grub-pc-bin \
+            grub-common \
+            mtools \
+            cpio \
+            build-essential \
+            bison \
+            flex \
+            libgmp3-dev \
+            libmpc-dev \
+            libmpfr-dev \
+            texinfo \
+            wget
+      
+      - name: Cache cross-compiler
+        id: cache-cross
+        uses: actions/cache@v3
+        with:
+          path: ~/cross
+          key: ${{ runner.os }}-cross-compiler-i686-elf
+      
+      - name: Build cross-compiler
+        if: steps.cache-cross.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/cross-build
+          cd ~/cross-build
+          
+          # Download binutils and gcc
+          wget https://ftp.gnu.org/gnu/binutils/binutils-2.41.tar.gz
+          wget https://ftp.gnu.org/gnu/gcc/gcc-13.2.0/gcc-13.2.0.tar.gz
+          
+          # Extract
+          tar xzf binutils-2.41.tar.gz
+          tar xzf gcc-13.2.0.tar.gz
+          
+          # Set up environment
+          export PREFIX="$HOME/cross"
+          export TARGET=i686-elf
+          export PATH="$PREFIX/bin:$PATH"
+          
+          # Build binutils
+          mkdir build-binutils
+          cd build-binutils
+          ../binutils-2.41/configure --target=$TARGET --prefix="$PREFIX" --with-sysroot --disable-nls --disable-werror
+          make -j$(nproc)
+          make install
+          cd ..
+          
+          # Build GCC
+          mkdir build-gcc
+          cd build-gcc
+          ../gcc-13.2.0/configure --target=$TARGET --prefix="$PREFIX" --disable-nls --enable-languages=c --without-headers
+          make all-gcc -j$(nproc)
+          make all-target-libgcc -j$(nproc)
+          make install-gcc
+          make install-target-libgcc
+      
+      - name: Set up cross-compiler in PATH
+        run: echo "$HOME/cross/bin" >> $GITHUB_PATH
+      
+      - name: Verify toolchain
+        run: |
+          chmod +x scripts/*.sh
+          ./scripts/toolchain_check.sh
+      
+      - name: Build ramOS
+        run: make
+      
+      - name: Read version
+        id: version
+        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+      
+      - name: Upload kernel artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: kernel-elf
+          path: iso/boot/kernel.elf
+      
+      - name: Upload initrd artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: initrd-cpio
+          path: iso/boot/initrd.cpio
+      
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ramOS-iso
+          path: iso/ramOS.iso
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: ramOS v${{ steps.version.outputs.version }}
+          body: |
+            ## ramOS v${{ steps.version.outputs.version }}
+            
+            Automated release build.
+            
+            ### Files
+            - `ramOS.iso` - Bootable ISO image
+            - `kernel.elf` - Kernel ELF binary
+            - `initrd.cpio` - Initial RAM disk
+            
+            ### Running
+            ```bash
+            # In VirtualBox
+            VBoxManage createvm --name ramOS --register
+            VBoxManage modifyvm ramOS --memory 256 --firmware bios
+            VBoxManage storagectl ramOS --name IDE --add ide
+            VBoxManage storageattach ramOS --storagectl IDE --port 0 --device 0 --type dvddrive --medium ramOS.iso
+            VBoxManage startvm ramOS
+            ```
+            
+            ### Shell Commands
+            - `help` - List commands
+            - `mem` - Memory statistics
+            - `uptime` - System uptime
+            - `ls` - List files
+            - `cat <file>` - Display file
+            - `sysinfo` - System information
+          files: |
+            iso/ramOS.iso
+            iso/boot/kernel.elf
+            iso/boot/initrd.cpio
+          draft: false
+          prerelease: false

@@ -1,0 +1,34 @@
+# Build artifacts
+build/
+*.o
+*.elf
+
+# ISO files
+iso/boot/kernel.elf
+iso/boot/initrd.cpio
+iso/*.iso
+
+# Editor and IDE files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.sublime-*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VirtualBox
+*.vdi
+*.vmdk
+*.vbox
+*.vbox-prev
+
+# Logs
+*.log
+
+# Backup files
+*.bak
+*.backup

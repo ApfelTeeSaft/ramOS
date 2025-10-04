@@ -1,0 +1,29 @@
+name: ramOS
+description: Minimal hobby OS booted by GRUB into a C kernel with an initrd RAM filesystem and simple shell
+version: 0.1.0
+arch: i686
+bootloader: multiboot-v1
+kernel_entry: kmain
+filesystem: initrd (cpio newc)
+shell_commands:
+  - help
+  - mem
+  - uptime
+  - echo
+  - ls
+  - cat
+  - sysinfo
+build:
+  toolchain:
+    - nasm
+    - i686-elf-gcc
+    - i686-elf-ld
+    - grub-mkrescue
+    - xorriso
+  outputs:
+    - iso/ramOS.iso
+targets:
+  virtualbox:
+    vm_name: ramOS
+    memory_mb: 256
+    firmware: bios

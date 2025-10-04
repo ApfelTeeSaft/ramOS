@@ -1,0 +1,20 @@
+╔════════════════════════════════════════════════════════════╗
+║                                                            ║
+║              Welcome to ramOS - A Hobby OS!                ║
+║                                                            ║
+║  This is a minimal operating system built for learning     ║
+║  operating system development concepts.                    ║
+║                                                            ║
+║  Features:                                                 ║
+║  • 32-bit protected mode kernel                            ║
+║  • Multiboot v1 boot via GRUB2                             ║
+║  • Interrupt handling (IDT, ISR, IRQ)                      ║
+║  • PIT timer for uptime tracking                           ║
+║  • PS/2 keyboard input                                     ║
+║  • VGA text mode console                                   ║
+║  • RAM-based filesystem (initrd)                           ║
+║  • Interactive shell with built-in commands                ║
+║                                                            ║
+║  Type 'help' to see available commands.                    ║
+║                                                            ║
+╚════════════════════════════════════════════════════════════╝
