@@ -1,0 +1,12 @@
+name: Keyboard Layout Manager
+description: Manage keyboard layouts and change active layout
+version: 1.0.0
+author: ramOS Development Team
+category: System
+binary: kbmap.elf
+icon: keyboard.ico
+permissions:
+  - console_io
+  - file_read
+  - file_write
+dependencies: []

@@ -6,6 +6,19 @@
 #include "../mm/heap.h"
 #include "../core/console.h"
 
+/* File open flags */
+#define O_RDONLY    0x0001
+#define O_WRONLY    0x0002
+#define O_RDWR      0x0004
+#define O_CREAT     0x0008
+#define O_TRUNC     0x0010
+#define O_APPEND    0x0020
+
+/* Seek constants */
+#define SEEK_SET    0
+#define SEEK_CUR    1
+#define SEEK_END    2
+
 #define MAX_FILE_DESCRIPTORS 256
 #define MAX_MOUNTS 16
 #define MAX_PATH_LENGTH 512

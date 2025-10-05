@@ -1,4 +1,4 @@
-/* kmain.c - Updated kernel entry point with all subsystems */
+/* kmain.c - Updated kernel entry point with keyboard layout system */
 
 #include <stdint.h>
 #include <stddef.h>
@@ -13,6 +13,7 @@
 #include "../mm/heap.h"
 #include "../mm/vmm.h"
 #include "../core/keyboard.h"
+#include "../core/keyboard_loader.h"
 #include "../drivers/driver.h"
 #include "../drivers/ata.h"
 #include "../drivers/pci.h"
@@ -102,7 +103,7 @@ void kmain(uint32_t magic, struct multiboot_info* mboot) {
     console_write("[*] Initializing Virtual Memory...\n");
     vmm_init();
     
-    /* Initialize keyboard */
+    /* Initialize keyboard (basic) */
     console_write("[*] Initializing Keyboard...\n");
     keyboard_init();
     
@@ -143,6 +144,10 @@ void kmain(uint32_t magic, struct multiboot_info* mboot) {
     /* Initialize EXT4 */
     console_write("[*] Initializing EXT4...\n");
     ext4_init();
+    
+    /* Initialize keyboard layout system */
+    console_write("[*] Initializing Keyboard Layout System...\n");
+    keyboard_layouts_init();
     
     /* Initialize process management */
     console_write("[*] Initializing Process Management...\n");

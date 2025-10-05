@@ -6,6 +6,9 @@
 #include <stdint.h>
 #include <stddef.h>
 
+/* Forward declaration - must match keyboard_loader.h */
+struct keyboard_layout_runtime;
+
 /* Initialize keyboard */
 void keyboard_init(void);
 
@@ -15,7 +18,13 @@ void keyboard_read_line(char* buffer, size_t max_len);
 /* Check if character is available */
 int keyboard_has_char(void);
 
-/* Get character (non-blocking) */
+/* Get character (blocking) */
 char keyboard_get_char(void);
+
+/* Get keyboard state (shift, ctrl, alt, capslock) */
+void keyboard_get_state(int* shift, int* ctrl, int* alt, int* caps);
+
+/* Set runtime layout */
+void keyboard_set_layout_runtime(struct keyboard_layout_runtime* layout);
 
 #endif /* KEYBOARD_H */

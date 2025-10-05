@@ -36,6 +36,7 @@ KERNEL_SOURCES = $(wildcard $(SRC_DIR)/kernel/core/*.c) \
                  $(wildcard $(SRC_DIR)/kernel/fs/*.c) \
                  $(wildcard $(SRC_DIR)/kernel/proc/*.c) \
                  $(wildcard $(SRC_DIR)/kernel/api/*.c) \
+                 $(wildcard $(SRC_DIR)/kernel/drivers/usb/*.c) \
                  $(SRC_DIR)/kernel/shell.c
 
 KERNEL_OBJECTS = $(patsubst $(SRC_DIR)/kernel/%.c,$(BUILD_DIR)/kernel_%.o,$(KERNEL_SOURCES))
@@ -45,7 +46,7 @@ API_SOURCES = $(API_DIR)/libsys.c
 API_OBJECTS = $(patsubst $(API_DIR)/%.c,$(BUILD_DIR)/api_%.o,$(API_SOURCES))
 
 # Application sources
-APP_NAMES = calculator editor filemanager installer shell
+APP_NAMES = calculator editor filemanager installer shell kbmap
 APP_BINARIES = $(foreach app,$(APP_NAMES),$(INITRD_ROOT)/bin/$(app).elf)
 
 # Common app startup
@@ -167,12 +168,21 @@ $(INITRD_ROOT)/bin/shell.elf: $(APPS_DIR)/shell/shell_app.c $(APP_START_OBJ) $(L
 	@chmod +x scripts/update_manifest.sh
 	@./scripts/update_manifest.sh $(APPS_DIR)/shell/manifest.yaml
 
+# Keyboard layout manager
+$(INITRD_ROOT)/bin/kbmap.elf: $(APPS_DIR)/kbmap/kbmap.c $(APP_START_OBJ) $(LIBSYS) $(APP_LINKER) | $(INITRD_ROOT)/bin
+	@echo "Building kbmap..."
+	$(CC) $(APP_CFLAGS) -c $(APPS_DIR)/kbmap/kbmap.c -o $(BUILD_DIR)/kbmap.o
+	$(LD) $(APP_LDFLAGS) -o $@ $(APP_START_OBJ) $(BUILD_DIR)/kbmap.o $(LIBSYS)
+	@chmod +x scripts/update_manifest.sh
+	@./scripts/update_manifest.sh $(APPS_DIR)/kbmap/manifest.yaml
+
 # Build initrd
 .PHONY: initrd
 initrd: $(INITRD_CPIO)
 
 $(INITRD_CPIO): $(APP_BINARIES) $(wildcard $(INITRD_ROOT)/*) | $(BOOT_DIR)
 	@echo "Creating initrd..."
+	@mkdir -p $(INITRD_ROOT)/etc/keyboard
 	@chmod +x scripts/make_initrd.sh
 	@./scripts/make_initrd.sh
 
@@ -202,6 +212,7 @@ $(GRUB_DIR):
 $(INITRD_ROOT)/bin:
 	mkdir -p $(INITRD_ROOT)/bin
 	mkdir -p $(INITRD_ROOT)/etc
+	mkdir -p $(INITRD_ROOT)/etc/keyboard
 	mkdir -p $(INITRD_ROOT)/drivers
 
 # Create virtual HDD for testing
@@ -251,7 +262,7 @@ help:
 	@echo "  iso            - Create bootable ISO"
 	@echo "  create-hdd     - Create virtual hard disk"
 	@echo "  run-vbox       - Run in VirtualBox (CD-ROM)"
-	@echo "  run-vbox-hdd   - Run in VirtualBox with HDD"
+	@echo "  run-vbox-install - Run in VirtualBox with HDD"
 	@echo "  clean          - Remove build artifacts"
 	@echo "  distclean      - Remove all generated files"
 	@echo "  help           - Show this help"
