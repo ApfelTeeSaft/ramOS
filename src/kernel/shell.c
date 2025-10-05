@@ -1,11 +1,12 @@
-/* shell.c - Interactive command shell implementation */
+/* shell.c - Interactive command shell (updated for VFS) */
 
 #include "shell.h"
-#include "console.h"
-#include "keyboard.h"
-#include "memory.h"
-#include "timer.h"
-#include "initrd.h"
+#include "core/console.h"
+#include "drivers/keyboard.h"
+#include "mm/memory.h"
+#include "core/timer.h"
+#include "fs/initrd.h"
+#include "fs/vfs.h"
 
 /* CPU vendor string retrieval */
 static void get_cpu_vendor(char* vendor) {
@@ -51,6 +52,13 @@ static void cmd_help(void) {
     kprintf("  ls       - List files in initrd\n");
     kprintf("  cat      - Display file contents\n");
     kprintf("  sysinfo  - Show system information\n");
+    kprintf("  clear    - Clear screen\n");
+    kprintf("\nApplications (run with full path):\n");
+    kprintf("  /bin/calculator   - Calculator\n");
+    kprintf("  /bin/editor       - Text Editor\n");
+    kprintf("  /bin/filemanager  - File Manager\n");
+    kprintf("  /bin/shell        - Standalone Shell\n");
+    kprintf("  /bin/installer    - System Installer\n");
 }
 
 /* Command: mem */
@@ -142,6 +150,12 @@ static void cmd_sysinfo(void) {
     kprintf("  CPU Vendor:     %s\n", vendor);
     kprintf("  CPU Mode:       Protected Mode\n");
     kprintf("  Bootloader:     Multiboot v1 (GRUB2)\n");
+    kprintf("  Features:       VFS, Drivers, Syscalls, Apps\n");
+}
+
+/* Command: clear */
+static void cmd_clear(void) {
+    console_clear();
 }
 
 /* Parse and execute command */
@@ -181,6 +195,12 @@ static void execute_command(char* input) {
         cmd_cat(args);
     } else if (strcmp(input, "sysinfo") == 0) {
         cmd_sysinfo();
+    } else if (strcmp(input, "clear") == 0) {
+        cmd_clear();
+    } else if (input[0] == '/') {
+        /* Try to execute as application */
+        kprintf("Application execution not yet implemented.\n");
+        kprintf("This will be available once process management is complete.\n");
     } else {
         console_set_color(VGA_COLOR_LIGHT_RED, VGA_COLOR_BLACK);
         kprintf("Unknown command: %s\n", input);

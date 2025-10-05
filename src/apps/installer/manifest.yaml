@@ -1,0 +1,20 @@
+name: System Installer
+description: Install ramOS to hard disk with EXT4 filesystem
+version: 1.0.0
+author: ramOS Development Team
+category: System
+binary: installer.elf
+icon: install.ico
+permissions:
+  - console_io
+  - disk_access
+  - file_read
+  - file_write
+  - mount
+  - admin
+dependencies: []
+build_time: auto
+build_flags:
+  - -O2
+  - -fno-builtin
+  - -nostdlib

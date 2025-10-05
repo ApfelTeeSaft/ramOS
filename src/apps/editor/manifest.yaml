@@ -1,0 +1,17 @@
+name: Text Editor
+description: Simple line-based text editor for ramOS
+version: 1.0.0
+author: ramOS Development Team
+category: Utility
+binary: editor.elf
+icon: edit.ico
+permissions:
+  - console_io
+  - file_read
+  - file_write
+dependencies: []
+build_time: auto
+build_flags:
+  - -O2
+  - -fno-builtin
+  - -nostdlib

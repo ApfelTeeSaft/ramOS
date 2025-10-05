@@ -1,0 +1,15 @@
+name: Calculator
+description: Simple arithmetic calculator for ramOS
+version: 1.0.0
+author: ramOS Development Team
+category: Utility
+binary: calculator.elf
+icon: calc.ico
+permissions:
+  - console_io
+dependencies: []
+build_time: auto
+build_flags:
+  - -O2
+  - -fno-builtin
+  - -nostdlib

@@ -1,0 +1,18 @@
+name: File Manager
+description: Browse and manage files on ramOS
+version: 1.0.0
+author: ramOS Development Team
+category: Utility
+binary: filemanager.elf
+icon: folder.ico
+permissions:
+  - console_io
+  - file_read
+  - file_write
+  - directory_ops
+dependencies: []
+build_time: auto
+build_flags:
+  - -O2
+  - -fno-builtin
+  - -nostdlib

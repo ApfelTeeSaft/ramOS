@@ -1,0 +1,17 @@
+name: Shell
+description: Command-line shell for ramOS with process execution
+version: 1.0.0
+author: ramOS Development Team
+category: System
+binary: shell.elf
+icon: terminal.ico
+permissions:
+  - console_io
+  - file_read
+  - process_exec
+dependencies: []
+build_time: auto
+build_flags:
+  - -O2
+  - -fno-builtin
+  - -nostdlib
