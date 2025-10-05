@@ -16,8 +16,6 @@
 #include "../drivers/driver.h"
 #include "../drivers/ata.h"
 #include "../drivers/pci.h"
-#include "../drivers/usb/usb_core.h"
-#include "../drivers/usb/uhci.h"
 #include "../fs/initrd.h"
 #include "../fs/vfs.h"
 #include "../fs/ext4.h"
@@ -120,9 +118,8 @@ void kmain(uint32_t magic, struct multiboot_info* mboot) {
     console_write("[*] Initializing ATA Driver...\n");
     ata_init();
     
-    /* Initialize USB */
-    console_write("[*] Initializing USB...\n");
-    uhci_init();
+    /* Note: USB support is a stub for now */
+    console_write("[*] USB support: stub only\n");
     
     /* Load initrd */
     console_write("[*] Loading initrd...\n");

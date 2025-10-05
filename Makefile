@@ -48,6 +48,10 @@ API_OBJECTS = $(patsubst $(API_DIR)/%.c,$(BUILD_DIR)/api_%.o,$(API_SOURCES))
 APP_NAMES = calculator editor filemanager installer shell
 APP_BINARIES = $(foreach app,$(APP_NAMES),$(INITRD_ROOT)/bin/$(app).elf)
 
+# Common app startup
+APP_START_SRC = $(APPS_DIR)/common/app_start.c
+APP_START_OBJ = $(BUILD_DIR)/app_start.o
+
 # Linker scripts
 KERNEL_LINKER = $(SRC_DIR)/linker.ld
 APP_LINKER = $(APPS_DIR)/common/app.ld
@@ -112,45 +116,55 @@ $(BUILD_DIR)/api_%.o: $(API_DIR)/%.c | $(BUILD_DIR)
 	@echo "Compiling $<..."
 	$(CC) $(API_CFLAGS) -c $< -o $@
 
+# Build app_start.o (shared by all applications)
+$(APP_START_OBJ): $(APP_START_SRC) | $(BUILD_DIR)
+	@echo "Compiling app startup code..."
+	$(CC) $(APP_CFLAGS) -c $< -o $@
+
 # Build applications
 .PHONY: apps
 apps: $(APP_BINARIES)
 
 # Calculator
-$(INITRD_ROOT)/bin/calculator.elf: $(APPS_DIR)/calculator/calculator.c $(LIBSYS) $(APP_LINKER) | $(INITRD_ROOT)/bin
+$(INITRD_ROOT)/bin/calculator.elf: $(APPS_DIR)/calculator/calculator.c $(APP_START_OBJ) $(LIBSYS) $(APP_LINKER) | $(INITRD_ROOT)/bin
 	@echo "Building calculator..."
 	$(CC) $(APP_CFLAGS) -c $(APPS_DIR)/calculator/calculator.c -o $(BUILD_DIR)/calculator.o
-	$(LD) $(APP_LDFLAGS) -o $@ $(BUILD_DIR)/calculator.o $(LIBSYS)
+	$(LD) $(APP_LDFLAGS) -o $@ $(APP_START_OBJ) $(BUILD_DIR)/calculator.o $(LIBSYS)
+	@chmod +x scripts/update_manifest.sh
 	@./scripts/update_manifest.sh $(APPS_DIR)/calculator/manifest.yaml
 
 # Editor
-$(INITRD_ROOT)/bin/editor.elf: $(APPS_DIR)/editor/editor.c $(LIBSYS) $(APP_LINKER) | $(INITRD_ROOT)/bin
+$(INITRD_ROOT)/bin/editor.elf: $(APPS_DIR)/editor/editor.c $(APP_START_OBJ) $(LIBSYS) $(APP_LINKER) | $(INITRD_ROOT)/bin
 	@echo "Building editor..."
 	$(CC) $(APP_CFLAGS) -c $(APPS_DIR)/editor/editor.c -o $(BUILD_DIR)/editor.o
-	$(LD) $(APP_LDFLAGS) -o $@ $(BUILD_DIR)/editor.o $(LIBSYS)
+	$(LD) $(APP_LDFLAGS) -o $@ $(APP_START_OBJ) $(BUILD_DIR)/editor.o $(LIBSYS)
+	@chmod +x scripts/update_manifest.sh
 	@./scripts/update_manifest.sh $(APPS_DIR)/editor/manifest.yaml
 
 # File Manager
-$(INITRD_ROOT)/bin/filemanager.elf: $(APPS_DIR)/filemanager/filemanager.c $(LIBSYS) $(APP_LINKER) | $(INITRD_ROOT)/bin
+$(INITRD_ROOT)/bin/filemanager.elf: $(APPS_DIR)/filemanager/filemanager.c $(APP_START_OBJ) $(LIBSYS) $(APP_LINKER) | $(INITRD_ROOT)/bin
 	@echo "Building filemanager..."
 	$(CC) $(APP_CFLAGS) -c $(APPS_DIR)/filemanager/filemanager.c -o $(BUILD_DIR)/filemanager.o
-	$(LD) $(APP_LDFLAGS) -o $@ $(BUILD_DIR)/filemanager.o $(LIBSYS)
+	$(LD) $(APP_LDFLAGS) -o $@ $(APP_START_OBJ) $(BUILD_DIR)/filemanager.o $(LIBSYS)
+	@chmod +x scripts/update_manifest.sh
 	@./scripts/update_manifest.sh $(APPS_DIR)/filemanager/manifest.yaml
 
 # Installer (multiple source files)
-$(INITRD_ROOT)/bin/installer.elf: $(wildcard $(APPS_DIR)/installer/*.c) $(LIBSYS) $(APP_LINKER) | $(INITRD_ROOT)/bin
+$(INITRD_ROOT)/bin/installer.elf: $(wildcard $(APPS_DIR)/installer/*.c) $(APP_START_OBJ) $(LIBSYS) $(APP_LINKER) | $(INITRD_ROOT)/bin
 	@echo "Building installer..."
 	$(CC) $(APP_CFLAGS) -c $(APPS_DIR)/installer/installer.c -o $(BUILD_DIR)/installer.o
 	$(CC) $(APP_CFLAGS) -c $(APPS_DIR)/installer/partition.c -o $(BUILD_DIR)/partition.o
 	$(CC) $(APP_CFLAGS) -c $(APPS_DIR)/installer/format.c -o $(BUILD_DIR)/format.o
-	$(LD) $(APP_LDFLAGS) -o $@ $(BUILD_DIR)/installer.o $(BUILD_DIR)/partition.o $(BUILD_DIR)/format.o $(LIBSYS)
+	$(LD) $(APP_LDFLAGS) -o $@ $(APP_START_OBJ) $(BUILD_DIR)/installer.o $(BUILD_DIR)/partition.o $(BUILD_DIR)/format.o $(LIBSYS)
+	@chmod +x scripts/update_manifest.sh
 	@./scripts/update_manifest.sh $(APPS_DIR)/installer/manifest.yaml
 
 # Shell app
-$(INITRD_ROOT)/bin/shell.elf: $(APPS_DIR)/shell/shell_app.c $(LIBSYS) $(APP_LINKER) | $(INITRD_ROOT)/bin
+$(INITRD_ROOT)/bin/shell.elf: $(APPS_DIR)/shell/shell_app.c $(APP_START_OBJ) $(LIBSYS) $(APP_LINKER) | $(INITRD_ROOT)/bin
 	@echo "Building shell..."
 	$(CC) $(APP_CFLAGS) -c $(APPS_DIR)/shell/shell_app.c -o $(BUILD_DIR)/shell_app.o
-	$(LD) $(APP_LDFLAGS) -o $@ $(BUILD_DIR)/shell_app.o $(LIBSYS)
+	$(LD) $(APP_LDFLAGS) -o $@ $(APP_START_OBJ) $(BUILD_DIR)/shell_app.o $(LIBSYS)
+	@chmod +x scripts/update_manifest.sh
 	@./scripts/update_manifest.sh $(APPS_DIR)/shell/manifest.yaml
 
 # Build initrd
@@ -196,17 +210,17 @@ create-hdd:
 	@chmod +x scripts/create_hdd.sh
 	@./scripts/create_hdd.sh
 
-# Run in VirtualBox with HDD
+# Run in VirtualBox (automatically attaches HDD if it exists)
 .PHONY: run-vbox
 run-vbox: $(ISO_FILE)
-	@chmod +x scripts/run_virtualbox.sh
-	@./scripts/run_virtualbox.sh $(ISO_FILE)
+	@chmod +x scripts/run_vbox.sh scripts/create_or_update_vbox_vm.sh
+	@./scripts/run_vbox.sh
 
-# Run in VirtualBox with HDD for installation testing
-.PHONY: run-vbox-hdd
-run-vbox-hdd: $(ISO_FILE) create-hdd
-	@chmod +x scripts/run_virtualbox.sh
-	@./scripts/run_virtualbox.sh $(ISO_FILE) --with-hdd
+# Create HDD and run (for installation testing)
+.PHONY: run-vbox-install
+run-vbox-install: $(ISO_FILE) create-hdd
+	@chmod +x scripts/run_vbox.sh scripts/create_or_update_vbox_vm.sh
+	@./scripts/run_vbox.sh
 
 # Clean build artifacts
 .PHONY: clean

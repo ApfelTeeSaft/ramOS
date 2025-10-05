@@ -7,6 +7,27 @@
 
 static char current_path[MAX_PATH] = "/";
 
+/* Simple snprintf - defined early so it can be used throughout */
+static void snprintf(char* str, size_t size, const char* format, ...) {
+    uint32_t* args = (uint32_t*)((char*)&format + sizeof(format));
+    int pos = 0;
+    int arg_idx = 0;
+    
+    while (*format && pos < (int)size - 1) {
+        if (*format == '%' && *(format + 1) == 's') {
+            const char* s = (const char*)args[arg_idx++];
+            while (*s && pos < (int)size - 1) {
+                str[pos++] = *s++;
+            }
+            format += 2;
+        } else {
+            str[pos++] = *format++;
+        }
+    }
+    
+    str[pos] = '\0';
+}
+
 /* Display current directory contents */
 static void list_directory(void) {
     int fd = sys_open(current_path, O_RDONLY);
@@ -164,27 +185,6 @@ static void show_stat(const char* name) {
     printf("  Modify: %u\n", st.st_mtime);
     printf("  Change: %u\n", st.st_ctime);
     println("");
-}
-
-/* Simple snprintf */
-static void snprintf(char* str, size_t size, const char* format, ...) {
-    uint32_t* args = (uint32_t*)((char*)&format + sizeof(format));
-    int pos = 0;
-    int arg_idx = 0;
-    
-    while (*format && pos < (int)size - 1) {
-        if (*format == '%' && *(format + 1) == 's') {
-            const char* s = (const char*)args[arg_idx++];
-            while (*s && pos < (int)size - 1) {
-                str[pos++] = *s++;
-            }
-            format += 2;
-        } else {
-            str[pos++] = *format++;
-        }
-    }
-    
-    str[pos] = '\0';
 }
 
 /* Main */

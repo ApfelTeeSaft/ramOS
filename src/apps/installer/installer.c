@@ -22,6 +22,80 @@ typedef enum {
 
 static install_step_t current_step = STEP_WELCOME;
 
+/* Helper functions - MUST be defined before use */
+
+/* Simple snprintf implementation */
+static int snprintf(char* str, size_t size, const char* format, ...) {
+    /* Simplified version - just handle basic cases */
+    uint32_t* args = (uint32_t*)((char*)&format + sizeof(format));
+    int pos = 0;
+    int arg_idx = 0;
+    
+    while (*format && pos < (int)size - 1) {
+        if (*format == '%' && *(format + 1) == 's') {
+            const char* s = (const char*)args[arg_idx++];
+            while (*s && pos < (int)size - 1) {
+                str[pos++] = *s++;
+            }
+            format += 2;
+        } else {
+            str[pos++] = *format++;
+        }
+    }
+    
+    str[pos] = '\0';
+    return pos;
+}
+
+/* Copy file helper */
+static int copy_file(const char* src, const char* dst) {
+    int src_fd = sys_open(src, O_RDONLY);
+    if (src_fd < 0) {
+        return -1;
+    }
+    
+    int dst_fd = sys_open(dst, O_WRONLY | O_CREAT | O_TRUNC);
+    if (dst_fd < 0) {
+        sys_close(src_fd);
+        return -1;
+    }
+    
+    char buffer[4096];
+    int bytes;
+    
+    while ((bytes = sys_read(src_fd, buffer, sizeof(buffer))) > 0) {
+        if (sys_write(dst_fd, buffer, bytes) != bytes) {
+            sys_close(src_fd);
+            sys_close(dst_fd);
+            return -1;
+        }
+    }
+    
+    sys_close(src_fd);
+    sys_close(dst_fd);
+    
+    return 0;
+}
+
+/* Create /etc/fstab */
+static void create_fstab(void) {
+    int fd = sys_open("/mnt/etc/fstab", O_WRONLY | O_CREAT | O_TRUNC);
+    if (fd < 0) return;
+    
+    const char* fstab =
+        "# /etc/fstab - filesystem mount table\n"
+        "/dev/sda2  /      ext4  defaults  0  1\n"
+        "/dev/sda1  /boot  ext4  defaults  0  2\n";
+    
+    sys_write(fd, fstab, strlen(fstab));
+    sys_close(fd);
+}
+
+/* Create GRUB config */
+static void create_grub_config(void) {
+    sys_mkdir("/mnt/boot/grub", 0755);
+}
+
 /* Display welcome screen */
 static void show_welcome(void) {
     println("========================================");
@@ -216,78 +290,6 @@ static int install_grub(void) {
     
     println("[+] GRUB installation complete");
     return 0;
-}
-
-/* Copy file helper */
-static int copy_file(const char* src, const char* dst) {
-    int src_fd = sys_open(src, O_RDONLY);
-    if (src_fd < 0) {
-        return -1;
-    }
-    
-    int dst_fd = sys_open(dst, O_WRONLY | O_CREAT | O_TRUNC);
-    if (dst_fd < 0) {
-        sys_close(src_fd);
-        return -1;
-    }
-    
-    char buffer[4096];
-    int bytes;
-    
-    while ((bytes = sys_read(src_fd, buffer, sizeof(buffer))) > 0) {
-        if (sys_write(dst_fd, buffer, bytes) != bytes) {
-            sys_close(src_fd);
-            sys_close(dst_fd);
-            return -1;
-        }
-    }
-    
-    sys_close(src_fd);
-    sys_close(dst_fd);
-    
-    return 0;
-}
-
-/* Create /etc/fstab */
-static void create_fstab(void) {
-    int fd = sys_open("/mnt/etc/fstab", O_WRONLY | O_CREAT | O_TRUNC);
-    if (fd < 0) return;
-    
-    const char* fstab =
-        "# /etc/fstab - filesystem mount table\n"
-        "/dev/sda2  /      ext4  defaults  0  1\n"
-        "/dev/sda1  /boot  ext4  defaults  0  2\n";
-    
-    sys_write(fd, fstab, strlen(fstab));
-    sys_close(fd);
-}
-
-/* Create GRUB config */
-static void create_grub_config(void) {
-    sys_mkdir("/mnt/boot/grub", 0755);
-}
-
-/* Simple snprintf implementation */
-static int snprintf(char* str, size_t size, const char* format, ...) {
-    /* Simplified version - just handle basic cases */
-    uint32_t* args = (uint32_t*)((char*)&format + sizeof(format));
-    int pos = 0;
-    int arg_idx = 0;
-    
-    while (*format && pos < (int)size - 1) {
-        if (*format == '%' && *(format + 1) == 's') {
-            const char* s = (const char*)args[arg_idx++];
-            while (*s && pos < (int)size - 1) {
-                str[pos++] = *s++;
-            }
-            format += 2;
-        } else {
-            str[pos++] = *format++;
-        }
-    }
-    
-    str[pos] = '\0';
-    return pos;
 }
 
 /* Main installer */

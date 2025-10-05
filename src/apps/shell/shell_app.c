@@ -5,6 +5,27 @@
 #define MAX_INPUT 256
 #define MAX_ARGS 16
 
+/* Simple snprintf - MUST be defined before use */
+static void snprintf(char* str, size_t size, const char* format, ...) {
+    uint32_t* args = (uint32_t*)((char*)&format + sizeof(format));
+    int pos = 0;
+    int arg_idx = 0;
+    
+    while (*format && pos < (int)size - 1) {
+        if (*format == '%' && *(format + 1) == 's') {
+            const char* s = (const char*)args[arg_idx++];
+            while (*s && pos < (int)size - 1) {
+                str[pos++] = *s++;
+            }
+            format += 2;
+        } else {
+            str[pos++] = *format++;
+        }
+    }
+    
+    str[pos] = '\0';
+}
+
 /* Execute external program */
 static int execute_program(char* argv[]) {
     int pid = sys_fork();
@@ -26,6 +47,8 @@ static int execute_program(char* argv[]) {
         sys_wait(&status);
         return status;
     }
+    
+    return 0;
 }
 
 /* Built-in: cd */
@@ -148,25 +171,4 @@ int main(int argc, char* argv[]) {
     
     println("Shell exited");
     return 0;
-}
-
-/* Simple snprintf */
-static void snprintf(char* str, size_t size, const char* format, ...) {
-    uint32_t* args = (uint32_t*)((char*)&format + sizeof(format));
-    int pos = 0;
-    int arg_idx = 0;
-    
-    while (*format && pos < (int)size - 1) {
-        if (*format == '%' && *(format + 1) == 's') {
-            const char* s = (const char*)args[arg_idx++];
-            while (*s && pos < (int)size - 1) {
-                str[pos++] = *s++;
-            }
-            format += 2;
-        } else {
-            str[pos++] = *format++;
-        }
-    }
-    
-    str[pos] = '\0';
 }

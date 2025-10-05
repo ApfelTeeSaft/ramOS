@@ -3,10 +3,12 @@
 #include "syscall.h"
 #include "../core/idt.h"
 #include "../core/isr.h"
-#include "../api/syscall_table.c"
 
-/* System call interrupt handler */
-static void syscall_handler(registers_t* regs) {
+/* External syscall dispatcher from syscall_table.c */
+extern int syscall_dispatch(uint32_t syscall_num, uint32_t arg1, uint32_t arg2, uint32_t arg3);
+
+/* System call interrupt handler - NOT static so assembly can call it */
+void syscall_handler(registers_t* regs) {
     /* Extract syscall number and arguments from registers */
     uint32_t syscall_num = regs->eax;
     uint32_t arg1 = regs->ebx;

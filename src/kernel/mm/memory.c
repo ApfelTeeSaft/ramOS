@@ -18,20 +18,6 @@ void memory_init(uint32_t total_kb) {
     heap_current = heap_start;
 }
 
-void* kmalloc(size_t size) {
-    if (size == 0) {
-        return 0;
-    }
-    
-    /* Align to 4 bytes */
-    size = (size + 3) & ~3;
-    
-    void* ptr = (void*)heap_current;
-    heap_current += size;
-    
-    return ptr;
-}
-
 uint32_t memory_get_total(void) {
     return total_memory;
 }
@@ -46,4 +32,8 @@ uint32_t memory_get_free(void) {
         return total_memory - used;
     }
     return 0;
+}
+
+uint32_t memory_get_heap_start(void) {
+    return heap_start;
 }
