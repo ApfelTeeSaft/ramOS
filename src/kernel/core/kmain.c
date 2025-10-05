@@ -12,7 +12,7 @@
 #include "../mm/memory.h"
 #include "../mm/heap.h"
 #include "../mm/vmm.h"
-#include "../drivers/keyboard.h"
+#include "../core/keyboard.h"
 #include "../drivers/driver.h"
 #include "../drivers/ata.h"
 #include "../drivers/pci.h"

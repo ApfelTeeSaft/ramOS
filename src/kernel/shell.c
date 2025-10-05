@@ -2,7 +2,7 @@
 
 #include "shell.h"
 #include "core/console.h"
-#include "drivers/keyboard.h"
+#include "core/keyboard.h"
 #include "mm/memory.h"
 #include "core/timer.h"
 #include "fs/initrd.h"

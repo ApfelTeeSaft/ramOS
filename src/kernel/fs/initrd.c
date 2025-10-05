@@ -6,14 +6,6 @@
 
 #define MAX_FILES 64
 
-/* Initrd file structure */
-typedef struct {
-    char name[256];
-    uint32_t size;
-    uint8_t* data;
-    vfs_node_t* vfs_node;
-} initrd_file_t;
-
 static initrd_file_t files[MAX_FILES];
 static int file_count = 0;
 static vfs_node_t* initrd_root = NULL;

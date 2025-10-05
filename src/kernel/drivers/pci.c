@@ -54,9 +54,9 @@ static int pci_device_exists(uint8_t bus, uint8_t device, uint8_t function) {
 void pci_scan(void) {
     kprintf("[PCI] Scanning PCI bus...\n");
     
-    for (uint8_t bus = 0; bus < 256; bus++) {
-        for (uint8_t device = 0; device < 32; device++) {
-            for (uint8_t function = 0; function < 8; function++) {
+    for (int bus = 0; bus < 256; bus++) {
+        for (int device = 0; device < 32; device++) {
+            for (int function = 0; function < 8; function++) {
                 if (!pci_device_exists(bus, device, function)) {
                     if (function == 0) break; /* No more functions */
                     continue;
