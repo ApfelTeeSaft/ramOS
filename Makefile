@@ -45,8 +45,8 @@ KERNEL_OBJECTS = $(patsubst $(SRC_DIR)/kernel/%.c,$(BUILD_DIR)/kernel_%.o,$(KERN
 API_SOURCES = $(API_DIR)/libsys.c
 API_OBJECTS = $(patsubst $(API_DIR)/%.c,$(BUILD_DIR)/api_%.o,$(API_SOURCES))
 
-# Application sources
-APP_NAMES = calculator editor filemanager installer shell kbmap
+# Application sources - UPDATED with procmon
+APP_NAMES = calculator editor filemanager installer shell kbmap procmon
 APP_BINARIES = $(foreach app,$(APP_NAMES),$(INITRD_ROOT)/bin/$(app).elf)
 
 # Common app startup
@@ -175,6 +175,13 @@ $(INITRD_ROOT)/bin/kbmap.elf: $(APPS_DIR)/kbmap/kbmap.c $(APP_START_OBJ) $(LIBSY
 	$(LD) $(APP_LDFLAGS) -o $@ $(APP_START_OBJ) $(BUILD_DIR)/kbmap.o $(LIBSYS)
 	@chmod +x scripts/update_manifest.sh
 	@./scripts/update_manifest.sh $(APPS_DIR)/kbmap/manifest.yaml
+
+# Process Monitor - NEW
+$(INITRD_ROOT)/bin/procmon.elf: $(APPS_DIR)/procmon/procmon.c $(APP_START_OBJ) $(LIBSYS) $(APP_LINKER) | $(INITRD_ROOT)/bin
+	@echo "Building procmon..."
+	@mkdir -p $(APPS_DIR)/procmon
+	$(CC) $(APP_CFLAGS) -c $(APPS_DIR)/procmon/procmon.c -o $(BUILD_DIR)/procmon.o
+	$(LD) $(APP_LDFLAGS) -o $@ $(APP_START_OBJ) $(BUILD_DIR)/procmon.o $(LIBSYS)
 
 # Build initrd
 .PHONY: initrd

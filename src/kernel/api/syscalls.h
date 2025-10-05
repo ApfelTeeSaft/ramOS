@@ -32,6 +32,8 @@
 #define SYS_IOCTL       22
 #define SYS_GETCWD      23
 #define SYS_CHDIR       24
+#define SYS_KILL        25  /* NEW */
+#define SYS_GETPROCS    26  /* NEW */
 
 /* System call implementations */
 int sys_exit(int code);
@@ -59,5 +61,7 @@ int sys_load_driver(const char* path);
 int sys_ioctl(int fd, uint32_t request, void* arg);
 int sys_getcwd(char* buf, size_t size);
 int sys_chdir(const char* path);
+int sys_kill(int pid, int signal);         /* NEW */
+int sys_getprocs(void* procs, int max_count);  /* NEW */
 
 #endif /* SYSCALLS_H */

@@ -33,6 +33,8 @@ syscall_fn_t syscall_table[] = {
     [SYS_IOCTL]       = (syscall_fn_t)sys_ioctl,
     [SYS_GETCWD]      = (syscall_fn_t)sys_getcwd,
     [SYS_CHDIR]       = (syscall_fn_t)sys_chdir,
+    [SYS_KILL]        = (syscall_fn_t)sys_kill,       /* NEW */
+    [SYS_GETPROCS]    = (syscall_fn_t)sys_getprocs,   /* NEW */
 };
 
 /* Number of system calls */

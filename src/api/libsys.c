@@ -49,6 +49,16 @@ int sys_getpid(void) {
     return syscall0(SYS_GETPID);
 }
 
+/* NEW: Kill process */
+int sys_kill(int pid, int signal) {
+    return syscall2(SYS_KILL, pid, signal);
+}
+
+/* NEW: Get process list */
+int sys_getprocs(proc_info_t* procs, int max_count) {
+    return syscall2(SYS_GETPROCS, (uint32_t)procs, max_count);
+}
+
 /* File I/O API */
 int sys_open(const char* path, int flags) {
     return syscall2(SYS_OPEN, (uint32_t)path, flags);

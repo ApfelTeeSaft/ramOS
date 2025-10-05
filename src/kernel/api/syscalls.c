@@ -28,6 +28,13 @@ static char* strncpy(char* dest, const char* src, size_t n) {
     return ret;
 }
 
+static void* memcpy(void* dest, const void* src, size_t n) {
+    uint8_t* d = dest;
+    const uint8_t* s = src;
+    while (n--) *d++ = *s++;
+    return dest;
+}
+
 /* Exit current process */
 int sys_exit(int code) {
     process_t* current = process_get_current();
@@ -114,6 +121,63 @@ int sys_wait(int* status) {
     if (!current) return -1;
     
     return process_wait(current, status);
+}
+
+/* Kill process - NEW */
+int sys_kill(int pid, int signal) {
+    /* Don't allow killing kernel process */
+    if (pid == 0) {
+        return -1;
+    }
+    
+    /* Check if process exists */
+    process_t* proc = process_get_by_pid(pid);
+    if (!proc) {
+        return -1;
+    }
+    
+    /* Check permissions (for now, any process can kill any other) */
+    /* In a real OS, would check if current process has permission */
+    
+    return process_kill(pid, signal);
+}
+
+/* Get process list - NEW */
+int sys_getprocs(void* procs_buf, int max_count) {
+    if (!procs_buf || max_count <= 0) return -1;
+    
+    /* Process info structure from libsys.h */
+    typedef struct {
+        uint32_t pid;
+        uint32_t ppid;
+        uint32_t state;
+        char name[64];
+        uint32_t memory_used;
+        uint32_t cpu_time;
+    } proc_info_t;
+    
+    proc_info_t* procs = (proc_info_t*)procs_buf;
+    int count = 0;
+    
+    /* Iterate through process list */
+    extern process_t* process_list;  /* Need to expose this */
+    
+    /* For now, use process_get_by_pid to iterate */
+    for (int pid = 0; pid < 256 && count < max_count; pid++) {
+        process_t* proc = process_get_by_pid(pid);
+        if (proc) {
+            procs[count].pid = proc->pid;
+            procs[count].ppid = proc->parent_pid;
+            procs[count].state = proc->state;
+            strncpy(procs[count].name, proc->name, 63);
+            procs[count].name[63] = '\0';
+            procs[count].memory_used = 0;  /* TODO: Calculate actual memory usage */
+            procs[count].cpu_time = timer_get_ticks() - proc->start_time;
+            count++;
+        }
+    }
+    
+    return count;
 }
 
 /* Allocate memory */

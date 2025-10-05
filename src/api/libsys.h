@@ -36,6 +36,8 @@
 #define SYS_IOCTL       22
 #define SYS_GETCWD      23
 #define SYS_CHDIR       24
+#define SYS_KILL        25  /* NEW */
+#define SYS_GETPROCS    26  /* NEW */
 
 /* File open flags */
 #define O_RDONLY    0x0001
@@ -61,6 +63,13 @@
 #define STDOUT      1
 #define STDERR      2
 
+/* Process states */
+#define PROC_STATE_READY    0
+#define PROC_STATE_RUNNING  1
+#define PROC_STATE_BLOCKED  2
+#define PROC_STATE_ZOMBIE   3
+#define PROC_STATE_DEAD     4
+
 /* File stat structure */
 typedef struct {
     uint32_t st_mode;
@@ -85,12 +94,24 @@ typedef struct {
     uint32_t ticks;
 } time_t;
 
+/* Process info structure (NEW) */
+typedef struct {
+    uint32_t pid;
+    uint32_t ppid;
+    uint32_t state;
+    char name[64];
+    uint32_t memory_used;
+    uint32_t cpu_time;
+} proc_info_t;
+
 /* Process API */
 void sys_exit(int code);
 int sys_fork(void);
 int sys_exec(const char* path, char* const argv[]);
 int sys_wait(int* status);
 int sys_getpid(void);
+int sys_kill(int pid, int signal);  /* NEW */
+int sys_getprocs(proc_info_t* procs, int max_count);  /* NEW */
 
 /* File I/O API */
 int sys_open(const char* path, int flags);

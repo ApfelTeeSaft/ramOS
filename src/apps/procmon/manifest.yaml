@@ -1,0 +1,17 @@
+name: Process Monitor
+description: Real-time process and memory monitor for debugging
+version: 1.0.0
+author: ramOS Development Team
+category: System
+binary: procmon.elf
+icon: monitor.ico
+permissions:
+  - console_io
+  - process_list
+  - process_kill
+  - memory_info
+dependencies: []
+build_flags:
+  - -O2
+  - -fno-builtin
+  - -nostdlib
