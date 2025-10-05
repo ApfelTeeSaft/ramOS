@@ -6,8 +6,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
-/* Forward declaration - must match keyboard_loader.h */
-struct keyboard_layout_runtime;
+/* Forward declaration - full definition in keyboard_loader.h */
+typedef struct keyboard_layout_runtime keyboard_layout_runtime_t;
 
 /* Initialize keyboard */
 void keyboard_init(void);
@@ -25,6 +25,6 @@ char keyboard_get_char(void);
 void keyboard_get_state(int* shift, int* ctrl, int* alt, int* caps);
 
 /* Set runtime layout */
-void keyboard_set_layout_runtime(struct keyboard_layout_runtime* layout);
+void keyboard_set_layout_runtime(keyboard_layout_runtime_t* layout);
 
 #endif /* KEYBOARD_H */

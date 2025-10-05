@@ -1,6 +1,7 @@
 /* keyboard_layout.c - Keyboard layout implementation (Legacy/Fallback) */
 
 #include "keyboard_layout.h"
+#include <stddef.h>
 
 static const keyboard_layout_t* active_layout = NULL;
 
@@ -43,8 +44,8 @@ static const char* en_us_shifted[128] = {
 
 const keyboard_layout_t layout_en_us = {
     .name = "en_US",
-    .normal = en_us_normal,
-    .shifted = en_us_shifted
+    .normal = {[0 ... 127] = NULL},
+    .shifted = {[0 ... 127] = NULL}
 };
 
 /* German QWERTZ Layout - FALLBACK ONLY */
@@ -86,21 +87,36 @@ static const char* de_de_shifted[128] = {
 
 const keyboard_layout_t layout_de_de = {
     .name = "de_DE",
-    .normal = de_de_normal,
-    .shifted = de_de_shifted
+    .normal = {[0 ... 127] = NULL},
+    .shifted = {[0 ... 127] = NULL}
 };
+
+/* Runtime initialization of layout tables */
+static void init_layout(keyboard_layout_t* layout, const char** normal, const char** shifted) {
+    for (int i = 0; i < 128; i++) {
+        layout->normal[i] = normal[i];
+        layout->shifted[i] = shifted[i];
+    }
+}
 
 /* Set active keyboard layout - LEGACY FUNCTION */
 void keyboard_set_layout(const keyboard_layout_t* layout) {
     if (layout) {
         active_layout = layout;
+        
+        /* Initialize if not already done */
+        if (layout == &layout_en_us && layout->normal[0x10] == NULL) {
+            init_layout((keyboard_layout_t*)&layout_en_us, en_us_normal, en_us_shifted);
+        } else if (layout == &layout_de_de && layout->normal[0x10] == NULL) {
+            init_layout((keyboard_layout_t*)&layout_de_de, de_de_normal, de_de_shifted);
+        }
     }
 }
 
 /* Get active keyboard layout - LEGACY FUNCTION */
 const keyboard_layout_t* keyboard_get_layout(void) {
     if (!active_layout) {
-        active_layout = &layout_en_us;  /* Default to US layout */
+        keyboard_set_layout(&layout_en_us);  /* Default to US layout */
     }
     return active_layout;
 }

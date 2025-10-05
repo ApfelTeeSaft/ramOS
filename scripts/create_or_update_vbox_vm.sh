@@ -3,11 +3,22 @@
 
 set -e
 
+# Get script directory and project root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 VM_NAME="ramOS"
-ISO_PATH="${1:-iso/ramOS.iso}"  # Default to iso/ramOS.iso if no argument
+ISO_PATH="${1:-$PROJECT_ROOT/iso/ramOS.iso}"
 
 # Convert to absolute path
 ISO_PATH=$(realpath "$ISO_PATH")
+
+# Check if ISO exists
+if [ ! -f "$ISO_PATH" ]; then
+    echo "Error: ISO file not found: $ISO_PATH"
+    echo "Run 'make iso' to build the ISO first"
+    exit 1
+fi
 
 echo "Setting up VirtualBox VM: $VM_NAME"
 echo "ISO: $ISO_PATH"
@@ -21,6 +32,17 @@ if VBoxManage showvminfo "$VM_NAME" &> /dev/null; then
         echo "Powering off VM..."
         VBoxManage controlvm "$VM_NAME" poweroff || true
         sleep 2
+    fi
+    
+    # Check if SATA controller exists, create if not
+    if ! VBoxManage showvminfo "$VM_NAME" | grep -q "SATA"; then
+        echo "Adding SATA controller to existing VM..."
+        VBoxManage storagectl "$VM_NAME" \
+            --name "SATA" \
+            --add sata \
+            --controller IntelAhci \
+            --portcount 1 \
+            --bootable on
     fi
 else
     echo "Creating new VM '$VM_NAME'..."
@@ -72,7 +94,7 @@ VBoxManage storageattach "$VM_NAME" \
     --medium "$ISO_PATH"
 
 # Attach HDD if it exists
-HDD_FILE="ramOS.vdi"
+HDD_FILE="$PROJECT_ROOT/ramOS.vdi"
 if [ -f "$HDD_FILE" ]; then
     echo "Found HDD: $HDD_FILE"
     echo "Attaching HDD to SATA controller..."

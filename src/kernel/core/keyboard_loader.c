@@ -11,10 +11,39 @@
 #define LAYOUT_DIR "/etc/keyboard/layouts"
 #define CONFIG_FILE "/etc/keyboard/active.conf"
 
+/* File open flags - must match vfs.c */
+#define O_RDONLY    0x0001
+#define O_WRONLY    0x0002
+#define O_RDWR      0x0004
+#define O_CREAT     0x0008
+#define O_TRUNC     0x0010
+#define O_APPEND    0x0020
+
 /* Loaded layouts */
 static keyboard_layout_runtime_t loaded_layouts[MAX_LAYOUTS];
 static int layout_count = 0;
 static char current_layout_code[32] = "en_US";
+
+/* Simple snprintf implementation - moved to top */
+static void my_snprintf(char* str, size_t size, const char* format, ...) {
+    uint32_t* args = (uint32_t*)((char*)&format + sizeof(format));
+    int pos = 0;
+    int arg_idx = 0;
+    
+    while (*format && pos < (int)size - 1) {
+        if (*format == '%' && *(format + 1) == 's') {
+            const char* s = (const char*)args[arg_idx++];
+            while (*s && pos < (int)size - 1) {
+                str[pos++] = *s++;
+            }
+            format += 2;
+        } else {
+            str[pos++] = *format++;
+        }
+    }
+    
+    str[pos] = '\0';
+}
 
 /* String utilities */
 static int strcmp(const char* s1, const char* s2) {
@@ -241,9 +270,9 @@ int keyboard_load_layouts(void) {
     /* Read directory entries */
     dirent_t entry;
     while (vfs_readdir(dir_fd, &entry) > 0) {
-        /* Check for .layout extension */
+        /* Check for .conf extension */
         int name_len = strlen(entry.name);
-        if (name_len < 7 || strcmp(entry.name + name_len - 7, ".layout") != 0) {
+        if (name_len < 6 || strcmp(entry.name + name_len - 5, ".conf") != 0) {
             continue;
         }
         
@@ -254,7 +283,7 @@ int keyboard_load_layouts(void) {
         
         /* Build full path */
         char path[256];
-        snprintf(path, sizeof(path), "%s/%s", LAYOUT_DIR, entry.name);
+        my_snprintf(path, sizeof(path), "%s/%s", LAYOUT_DIR, entry.name);
         
         /* Parse layout file */
         if (parse_layout_file(path, &loaded_layouts[layout_count]) == 0) {
@@ -309,11 +338,7 @@ int keyboard_set_active_layout(const char* code) {
     }
     
     /* Update keyboard driver */
-    keyboard_layout_t static_layout;
-    static_layout.name = layout->name;
-    static_layout.normal = (const char**)&layout->normal;
-    static_layout.shifted = (const char**)&layout->shifted;
-    
+    extern void keyboard_set_layout_runtime(keyboard_layout_runtime_t* layout);
     keyboard_set_layout_runtime(layout);
     
     /* Save to config */
@@ -375,7 +400,7 @@ int keyboard_save_config(void) {
     }
     
     char buffer[256];
-    snprintf(buffer, sizeof(buffer), "# ramOS Keyboard Configuration\nlayout=%s\n", 
+    my_snprintf(buffer, sizeof(buffer), "# ramOS Keyboard Configuration\nlayout=%s\n", 
              current_layout_code);
     
     vfs_write(fd, buffer, strlen(buffer));
@@ -397,6 +422,7 @@ void keyboard_layouts_init(void) {
     /* Set active layout */
     keyboard_layout_runtime_t* layout = keyboard_get_layout_by_code(current_layout_code);
     if (layout) {
+        extern void keyboard_set_layout_runtime(keyboard_layout_runtime_t* layout);
         keyboard_set_layout_runtime(layout);
         kprintf("[KEYBOARD] Active layout: %s\n", layout->name);
     } else {
@@ -405,25 +431,4 @@ void keyboard_layouts_init(void) {
             keyboard_set_active_layout(loaded_layouts[0].code);
         }
     }
-}
-
-/* Simple snprintf for internal use */
-static void snprintf(char* str, size_t size, const char* format, ...) {
-    uint32_t* args = (uint32_t*)((char*)&format + sizeof(format));
-    int pos = 0;
-    int arg_idx = 0;
-    
-    while (*format && pos < (int)size - 1) {
-        if (*format == '%' && *(format + 1) == 's') {
-            const char* s = (const char*)args[arg_idx++];
-            while (*s && pos < (int)size - 1) {
-                str[pos++] = *s++;
-            }
-            format += 2;
-        } else {
-            str[pos++] = *format++;
-        }
-    }
-    
-    str[pos] = '\0';
 }

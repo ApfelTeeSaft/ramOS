@@ -6,7 +6,7 @@
 #include <stdint.h>
 
 /* Runtime keyboard layout structure */
-typedef struct {
+typedef struct keyboard_layout_runtime {
     char name[64];
     char code[32];
     char variant[32];

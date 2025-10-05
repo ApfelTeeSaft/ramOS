@@ -1,5 +1,6 @@
 #include "usb_core.h"
 #include "uhci.h"
+#include "../pci.h"
 #include "../../core/console.h"
 #include "../../mm/heap.h"
 
@@ -20,6 +21,11 @@ typedef struct {
 
 static usb_controller_t usb_controllers[MAX_USB_CONTROLLERS];
 static int controller_count = 0;
+
+/* Forward declarations */
+static void usb_enumerate_controllers(void);
+static int usb_init_controller(usb_controller_t* ctrl);
+static void usb_load_driver_for_device(usb_device_t* device);
 
 /* String copy helper */
 static void* memcpy(void* dest, const void* src, size_t n) {
@@ -58,13 +64,8 @@ void usb_init(void) {
 }
 
 /* Enumerate USB controllers */
-void usb_enumerate_controllers(void) {
+static void usb_enumerate_controllers(void) {
     /* Use PCI to find USB controllers */
-    extern void pci_scan(void);
-    extern pci_device_t* pci_find_device(uint16_t, uint16_t);
-    
-    /* Look for common USB controller vendor/device IDs */
-    /* Intel UHCI */
     pci_device_t* dev = pci_find_device(0x8086, 0x7020);
     if (dev && controller_count < MAX_USB_CONTROLLERS) {
         usb_controllers[controller_count].vendor_id = dev->vendor_id;
@@ -78,7 +79,7 @@ void usb_enumerate_controllers(void) {
 }
 
 /* Initialize USB controller */
-int usb_init_controller(usb_controller_t* ctrl) {
+static int usb_init_controller(usb_controller_t* ctrl) {
     if (!ctrl) return -1;
     
     kprintf("[USB] Initializing controller: %04x:%04x\n", 
@@ -125,7 +126,7 @@ int usb_register_device(usb_device_t* device) {
 }
 
 /* Load driver for USB device */
-void usb_load_driver_for_device(usb_device_t* device) {
+static void usb_load_driver_for_device(usb_device_t* device) {
     if (!device) return;
     
     kprintf("[USB] Looking for driver for class %02x:%02x\n", 
@@ -180,6 +181,7 @@ int usb_control_transfer(usb_device_t* device, uint8_t request_type,
     
     /* Stub implementation */
     (void)data;
+    (void)setup;
     
     return -1;
 }
