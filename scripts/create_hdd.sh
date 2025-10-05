@@ -1,46 +1,117 @@
 #!/bin/bash
-# create_hdd.sh - Create a virtual hard disk for VirtualBox testing
+# create_or_update_vbox_vm.sh - Create or update VirtualBox VM for ramOS
 
 set -e
 
-HDD_FILE="ramOS.vdi"
-HDD_SIZE=8192  # 8GB in MB
+VM_NAME="ramOS"
+ISO_PATH="${1:-iso/ramOS.iso}"  # Default to iso/ramOS.iso if no argument
 
-# Check if file already exists
-if [ -f "$HDD_FILE" ]; then
-    echo "Hard disk already exists: $HDD_FILE"
-    read -p "Recreate? This will delete all data! (y/N) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        echo "Keeping existing disk"
-        exit 0
+# Convert to absolute path
+ISO_PATH=$(realpath "$ISO_PATH")
+
+echo "Setting up VirtualBox VM: $VM_NAME"
+echo "ISO: $ISO_PATH"
+
+# Check if VM exists
+if VBoxManage showvminfo "$VM_NAME" &> /dev/null; then
+    echo "VM '$VM_NAME' exists, updating..."
+    
+    # Power off VM if running
+    if VBoxManage showvminfo "$VM_NAME" | grep -q "running"; then
+        echo "Powering off VM..."
+        VBoxManage controlvm "$VM_NAME" poweroff || true
+        sleep 2
     fi
     
-    echo "Removing old disk..."
+    # Check if SATA controller exists, create if not
+    if ! VBoxManage showvminfo "$VM_NAME" | grep -q "SATA"; then
+        echo "Adding SATA controller to existing VM..."
+        VBoxManage storagectl "$VM_NAME" \
+            --name "SATA" \
+            --add sata \
+            --controller IntelAhci \
+            --portcount 1 \
+            --bootable on
+    fi
+else
+    echo "Creating new VM '$VM_NAME'..."
     
-    # Close any VirtualBox medium that might be using it
-    VBoxManage closemedium disk "$HDD_FILE" &> /dev/null || true
+    # Create VM
+    VBoxManage createvm --name "$VM_NAME" --ostype Other --register
     
-    rm -f "$HDD_FILE"
+    # Configure VM
+    VBoxManage modifyvm "$VM_NAME" \
+        --memory 256 \
+        --boot1 dvd \
+        --boot2 disk \
+        --boot3 none \
+        --boot4 none \
+        --firmware bios \
+        --ioapic off \
+        --rtcuseutc on
+    
+    # Create IDE controller
+    VBoxManage storagectl "$VM_NAME" \
+        --name "IDE" \
+        --add ide \
+        --controller PIIX4 \
+        --bootable on
+    
+    # Create SATA controller for HDD
+    VBoxManage storagectl "$VM_NAME" \
+        --name "SATA" \
+        --add sata \
+        --controller IntelAhci \
+        --portcount 1 \
+        --bootable on
 fi
 
-echo "Creating virtual hard disk..."
-echo "  File: $HDD_FILE"
-echo "  Size: ${HDD_SIZE}MB (8GB)"
-echo ""
+# Detach any existing DVD
+VBoxManage storageattach "$VM_NAME" \
+    --storagectl "IDE" \
+    --port 0 \
+    --device 0 \
+    --medium none &> /dev/null || true
 
-# Create new VDI disk
-VBoxManage createmedium disk --filename "$HDD_FILE" --size $HDD_SIZE --format VDI
+# Attach ISO
+echo "Attaching ISO..."
+VBoxManage storageattach "$VM_NAME" \
+    --storagectl "IDE" \
+    --port 0 \
+    --device 0 \
+    --type dvddrive \
+    --medium "$ISO_PATH"
+
+# Attach HDD if it exists
+HDD_FILE="ramOS.vdi"
+if [ -f "$HDD_FILE" ]; then
+    echo "Found HDD: $HDD_FILE"
+    echo "Attaching HDD to SATA controller..."
+    
+    # Detach any existing HDD first
+    VBoxManage storageattach "$VM_NAME" \
+        --storagectl "SATA" \
+        --port 0 \
+        --device 0 \
+        --medium none &> /dev/null || true
+    
+    # Attach the HDD
+    VBoxManage storageattach "$VM_NAME" \
+        --storagectl "SATA" \
+        --port 0 \
+        --device 0 \
+        --type hdd \
+        --medium "$HDD_FILE"
+    
+    echo "HDD attached successfully"
+else
+    echo "No HDD found ($HDD_FILE). Run 'make create-hdd' to create one."
+fi
 
 echo ""
-echo "✓ Virtual hard disk created successfully!"
+echo "VM '$VM_NAME' is ready!"
 echo ""
-echo "The HDD will be automatically attached when you run:"
-echo "  make run-vbox"
+echo "Boot order: 1. DVD (installer), 2. HDD (installed system)"
 echo ""
-echo "To install ramOS to the HDD:"
-echo "  1. Run: make run-vbox"
-echo "  2. Boot from the ISO (installer)"
-echo "  3. In ramOS shell, run: /bin/installer"
-echo "  4. Follow the installation prompts"
-echo "  5. Reboot and it will boot from the installed system"
+echo "To start: VBoxManage startvm $VM_NAME"
+echo "To start headless: VBoxManage startvm $VM_NAME --type headless"
