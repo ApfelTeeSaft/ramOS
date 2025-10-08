@@ -1,6 +1,6 @@
 name: ramOS
 description: Minimal hobby OS booted by GRUB into a C kernel with an initrd RAM filesystem and simple shell
-version: 0.1.0
+version: 0.2.0
 arch: i686
 bootloader: multiboot-v1
 kernel_entry: kmain
