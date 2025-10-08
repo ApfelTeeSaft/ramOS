@@ -1,4 +1,4 @@
-# ramOS - Advanced Edition
+# ramOS
 
 ![Version](https://img.shields.io/badge/version-0.2.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
